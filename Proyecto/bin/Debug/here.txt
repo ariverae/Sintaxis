@@ -1,0 +1,6 @@
+Nro de Línea	Lexema	Token
+1       	Hola	Identificador
+1       	[	Puntuacion
+1       	&	Puntuacion
+2       	los	Identificador
+3       	pibes	Identificador
