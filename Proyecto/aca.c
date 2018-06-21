@@ -5,35 +5,72 @@
 typedef int bool;
 enum { false, true };
 
-typedef enum {RESERVADO, IDENTIFICADOR, NUMERO, PUNTUACION, OPERADOR} tipoDeToken;
+typedef enum {NUMERO, IDORES, IDFUNCION, IDENTIFICADOR, CARACTER, RESERVADO} tipoDeToken;
+
+int array[5][7] = {
+    {1   ,2   ,3   ,4   ,4   ,106 ,107},
+    {1   ,101 ,101 ,101 ,101 ,101 ,101},
+    {3   ,2   ,3   ,103 ,102 ,102 ,102},
+    {3   ,3   ,3   ,103 ,104 ,104 ,104},
+    {105 ,105 ,105 ,105 ,105 ,105 ,105}
+};
 
 const char * RES_WORDS[] = {
 "auto",
 "double",
 "int",
 "struct",
+"break",
+"else",
+"long",
 "switch",
-"typedef"
+"case",
+"enum",
+"register",
+"typedef",
+"char",
+"extern",
+"return",
+"union",
+"const",
+"float",
+"short",
+"unsigned",
+"continue",
+"for",
+"signed",
+"void",
+"default",
+"goto",
+"sizeof",
+"volatile",
+"do",
+"if",
+"static",
+"while"
 };
 
 #define resSize (sizeof (RES_WORDS) / sizeof (const char *))
 
 int isspace(int c);
+int isdigit(int c);
 int isalpha(int c);
 int ispunct(int c);
-tipoDeToken verificarCadenaTipo(char lexema[], bool containsAlpha);
-void printTokenInfo(char lexema[], int lineaPos, bool outputEnabled, FILE *fp, tipoDeToken tokenTipo);
+int isEndLexema(int c);
+int setColumn(char c);
+tipoDeToken verificarCadenaTipo(char lexema[]);
+void printTokenInfo(char lexema[], int lineaPos, bool outputEnabled, FILE *fp, int tokenAEvaluar);
 void createHeader(bool outputEnabled, FILE *fp);
 
 int main(int argc, char *argv[])
 {
-    tipoDeToken tokenTipo;
 	char lexema [100];
 	char c;
+	int column;
+	int row = 0;
 	int i = 0;
 	int lineNumber = 1;
 	bool enableOutFile = false;
-	bool containsAlpha = false;
 	FILE *inputFile;
 	FILE *outputFile;
 
@@ -45,42 +82,29 @@ int main(int argc, char *argv[])
 
 	if ((inputFile && !enableOutFile ) || (inputFile && enableOutFile && outputFile)) {                                    // Verifies if the file exists
 	    createHeader(enableOutFile, outputFile);
-		while ((c = getc(inputFile)) != EOF){           // Leaves on EOF
-			if(isspace(c) || ispunct(c) ){              // Verifies if it's space or a punctuation character
-                if(i > 0){
-                    lexema[i] = '\0';
-                    tokenTipo = verificarCadenaTipo(lexema, containsAlpha);
-                    printTokenInfo(lexema, lineNumber, enableOutFile, outputFile, tokenTipo);
-                    i = 0;
-                    containsAlpha = false;
-                    ungetc(c, inputFile);
-                }
-                else{
-                    if(ispunct(c)){
-                        lexema[0] = c;
-                        lexema[1] = '\0';
-                        tokenTipo = PUNTUACION;
-                        printTokenInfo(lexema, lineNumber, enableOutFile, outputFile, tokenTipo);
+		while (row != 107){
+            c = getc(inputFile);// Leaves on EOF
+            column = setColumn(c);
+            row = array[row][column];
+            if(isEndLexema(row)){
+                if(row != 107){
+                    if(row == 106){
+                        if(c == 10){
+                            lineNumber += 1;
+                        }
+                    }else{
+                        lexema[i] = '\0';
+                        printTokenInfo(lexema, lineNumber, enableOutFile, outputFile, row);
+                        ungetc(c,inputFile);
                     }
-                    else if(c == '\n'){
-                       lineNumber++;
-                    }
+                row = 0;
+                i = 0;
                 }
-
-			}
-			else{
-                if(isalpha(c)){
-                    containsAlpha = true;
-                }
-				lexema[i++] = c;
-			}
+            }else{
+                lexema[i] = c;
+                i++;
+            }
 		}
-
-		if(i > 0){
-            lexema[i] = '\0';
-            tokenTipo = verificarCadenaTipo(lexema, containsAlpha);
-            printTokenInfo(lexema, lineNumber, enableOutFile, outputFile,tokenTipo);
-        }
 
 		fclose(inputFile);
         if( enableOutFile ){
@@ -95,10 +119,33 @@ int main(int argc, char *argv[])
 	return 1;
 }
 
+int isEndLexema(int c){
+    if(c > 100)
+        return true;
+    else
+        return false;
+}
+
+int setColumn(char c){
+    if(isdigit(c))
+        return 0;
+    else if(isalpha(c))
+        return 1;
+    else if(c == '_')
+        return 2;
+    else if(c == '(')
+        return 3;
+    else if(c == EOF)
+        return 6;
+    else if(isspace(c))
+        return 5;
+    else
+        return 4;
+}
+
+// Create Template
 void createHeader(bool outputEnabled, FILE *fp)
 {
-
-
     if(outputEnabled)
     {
         fprintf(fp, "%s", "Nro de Línea");
@@ -113,9 +160,11 @@ void createHeader(bool outputEnabled, FILE *fp)
     }
 }
 
-void printTokenInfo(char lexema[], int lineaPos, bool outputEnabled, FILE *fp, tipoDeToken tokenTipo)
+void printTokenInfo(char lexema[], int lineaPos, bool outputEnabled, FILE *fp, int tokenAEvaluar)
 {
     char token[20];
+
+    tipoDeToken tokenTipo = tokenAEvaluar - 101;
 
     switch(tokenTipo)
     {
@@ -125,12 +174,24 @@ void printTokenInfo(char lexema[], int lineaPos, bool outputEnabled, FILE *fp, t
         case IDENTIFICADOR:
             strcpy(token, "Identificador");
             break;
-        case RESERVADO:
-            strcpy(token, "Reservado");
+        case IDFUNCION:
+            if(verificarCadenaTipo(lexema) == RESERVADO){
+                strcpy(token, "Reservado");
+            }else{
+                strcpy(token, "Identificador Funcion");
+            }
             break;
-        case PUNTUACION:
-            strcpy(token, "Puntuacion");
+        case CARACTER:
+            strcpy(token, "CaracterPuntuacion");
             break;
+        case IDORES:
+            if(verificarCadenaTipo(lexema) == RESERVADO){
+                strcpy(token, "Reservado");
+            }else{
+                strcpy(token, "Identificador");
+            }
+            break;
+
     }
 
     if(outputEnabled){
@@ -145,23 +206,17 @@ void printTokenInfo(char lexema[], int lineaPos, bool outputEnabled, FILE *fp, t
     }
 }
 
-tipoDeToken verificarCadenaTipo(char lexema[], bool containsAlpha)
+tipoDeToken verificarCadenaTipo(char lexema[])
 {
     int pos;
 
-    if(!containsAlpha)
+    for(pos = 0; pos < resSize; pos++)
     {
-        return NUMERO;
-    }
-    else{
-        for(pos = 0; pos < resSize; pos++)
-        {
             if(strcmp(RES_WORDS[pos], lexema) == 0)
             {
                 return RESERVADO;
             }
-        }
+    }
 
         return IDENTIFICADOR;
-    }
 }
