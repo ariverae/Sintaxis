@@ -5,7 +5,7 @@
 typedef int bool;
 enum { false, true };
 
-typedef enum {NUMERO, IDORES, IDFUNCION, IDENTIFICADOR, CARACTER, RESERVADO} tipoDeToken;
+typedef enum {NUMERO, IDORES, IDFUNCION, IDENTIFICADOR, CARACTER, RESERVADO, OPERADOR} tipoDeToken;
 
 int array[5][7] = {
     {1   ,2   ,3   ,4   ,4   ,106 ,107},
@@ -55,7 +55,11 @@ const char * RES_WORDS[] = {
 int isspace(int c);
 int isdigit(int c);
 int isalpha(int c);
+int isOneOperator(char c);
+int isDoubleOperator(char c);
+int isSelfAssigned(char c);
 int ispunct(int c);
+tipoDeToken verificarPuntuacionTipo(char lexema[], FILE *fp);
 int isEndLexema(int c);
 int setColumn(char c);
 tipoDeToken verificarCadenaTipo(char lexema[]);
@@ -92,7 +96,14 @@ int main(int argc, char *argv[])
                         if(c == 10){
                             lineNumber += 1;
                         }
-                    }else{
+                    }
+                    else if(row == 105){
+                        ungetc(c,inputFile);
+                        lexema[i] = '\0';
+                        row = verificarPuntuacionTipo(lexema, inputFile);
+                        printTokenInfo(lexema, lineNumber, enableOutFile, outputFile, row);
+                    }
+                    else{
                         lexema[i] = '\0';
                         printTokenInfo(lexema, lineNumber, enableOutFile, outputFile, row);
                         ungetc(c,inputFile);
@@ -126,6 +137,42 @@ int isEndLexema(int c){
         return false;
 }
 
+int isDoubleOperator(char c){
+    switch(c){
+        case '+':
+        case '-':
+        case '=':
+        case '&':
+        case '|':
+        case '>':
+        case '<':
+            return true;
+    }
+    return false;
+}
+
+int isOneOperator(char c){
+    switch(c){
+        case '.':
+        case '~':
+            return true;
+    }
+
+    return false;
+}
+
+int isSelfAssigned(char c){
+    switch(c){
+        case '/':
+        case '*':
+        case '%':
+        case '!':
+            return true;
+    }
+
+    return false;
+}
+
 int setColumn(char c){
     if(isdigit(c))
         return 0;
@@ -141,6 +188,42 @@ int setColumn(char c){
         return 5;
     else
         return 4;
+}
+
+tipoDeToken verificarPuntuacionTipo(char lexema[], FILE *inputFile){
+    char nextChar;
+    if(isOneOperator(lexema[0]))
+        return OPERADOR;
+    else{
+        nextChar = getc(inputFile);
+        if(isDoubleOperator(lexema[0]) && lexema[0] == nextChar ){
+            lexema[1] = nextChar;
+            lexema[2] = '\0';
+            if(strcmp(lexema, ">>") == 0 || strcmp(lexema, "<<") == 0){
+                if((nextChar = getc(inputFile)) == '=' ){
+                    lexema[2] = nextChar;
+                    lexema[3] = '\0';
+                }
+                else{
+                    ungetc(nextChar, inputFile);
+                }
+            }
+            return OPERADOR;
+        }
+        else if( (isDoubleOperator(lexema[0]) || isSelfAssigned(lexema[0])) && nextChar == '='){
+            lexema[1] = nextChar;
+            lexema[2] = '\0';
+            return OPERADOR;
+        }
+        else if( isDoubleOperator(lexema[0]) || isSelfAssigned(lexema[0]) ){
+            ungetc(nextChar, inputFile);
+            return OPERADOR;
+        }
+        else{
+            ungetc(nextChar, inputFile);
+            return CARACTER;
+        }
+    }
 }
 
 // Create Template
@@ -164,7 +247,14 @@ void printTokenInfo(char lexema[], int lineaPos, bool outputEnabled, FILE *fp, i
 {
     char token[20];
 
-    tipoDeToken tokenTipo = tokenAEvaluar - 101;
+    tipoDeToken tokenTipo;
+
+    if(tokenAEvaluar > 100){
+        tokenTipo = tokenAEvaluar - 101;
+    }
+    else{
+        tokenTipo = tokenAEvaluar;
+    }
 
     switch(tokenTipo)
     {
@@ -182,7 +272,10 @@ void printTokenInfo(char lexema[], int lineaPos, bool outputEnabled, FILE *fp, i
             }
             break;
         case CARACTER:
-            strcpy(token, "CaracterPuntuacion");
+            strcpy(token, "Caracter De Puntuacion");
+            break;
+        case OPERADOR:
+            strcpy(token, "Operador");
             break;
         case IDORES:
             if(verificarCadenaTipo(lexema) == RESERVADO){
