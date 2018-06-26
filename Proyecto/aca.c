@@ -47,8 +47,13 @@ const char * RES_WORDS[] = {
 "do",
 "if",
 "static",
-"while"
+"while",
+"bool",
+"FILE",
+"true",
+"false"
 };
+
 
 #define resSize (sizeof (RES_WORDS) / sizeof (const char *))
 
