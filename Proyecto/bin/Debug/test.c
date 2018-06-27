@@ -1,7 +1,7 @@
-int un_subprog(int x, int y)
+#include <stdio.h>
+int main()
 {
-	if(x > y)
-		return x++;
-	else
-		return y;
+   // printf() displays the string inside quotation
+   printf("Hello, World!");
+   return 0;
 }

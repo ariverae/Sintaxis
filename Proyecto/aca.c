@@ -5,14 +5,16 @@
 typedef int bool;
 enum { false, true };
 
-typedef enum {NUMERO, IDORES, IDFUNCION, IDENTIFICADOR, CARACTER, RESERVADO, OPERADOR} tipoDeToken;
+typedef enum {NUMERO, IDORES, IDFUNCION, IDENTIFICADOR, CARACTER, RESERVADO, STRING, OPERADOR} tipoDeToken;
 
-int array[5][7] = {
-    {1   ,2   ,3   ,4   ,4   ,106 ,107},
-    {1   ,101 ,101 ,101 ,101 ,101 ,101},
-    {3   ,2   ,3   ,103 ,102 ,102 ,102},
-    {3   ,3   ,3   ,103 ,104 ,104 ,104},
-    {105 ,105 ,105 ,105 ,105 ,105 ,105}
+int array[7][8] = {
+    {1   ,2   ,3   ,4   ,4   ,106 ,5   ,108},
+    {1   ,101 ,101 ,101 ,101 ,101 ,101 ,101},
+    {3   ,2   ,3   ,103 ,102 ,102 ,102 ,102},
+    {3   ,3   ,3   ,103 ,104 ,104 ,104 ,104},
+    {105 ,105 ,105 ,105 ,105 ,105 ,105 ,105},
+    {5   ,5   ,5   ,5   ,5   ,5   ,6   ,107},
+    {107 ,107 ,107 ,107 ,107 ,107 ,107 ,107},
 };
 
 const char * RES_WORDS[] = {
@@ -86,12 +88,12 @@ int main(int argc, char *argv[])
 
 	if ((inputFile && !enableOutFile ) || (inputFile && enableOutFile && outputFile)) {                                    // Verifies if the file exists
 	    createHeader(enableOutFile, outputFile);
-		while (row != 107){
+		while (row != 108){
             c = getc(inputFile);// Leaves on EOF
             column = setColumn(c);
             row = array[row][column];
             if(isEndLexema(row)){
-                if(row != 107){
+                if(row != 108){
                     if(row == 106){
                         if(c == 10){
                             lineNumber += 1;
@@ -182,8 +184,10 @@ int setColumn(char c){
         return 2;
     else if(c == '(')
         return 3;
-    else if(c == EOF)
+    else if(c == '"')
         return 6;
+    else if(c == EOF)
+        return 7;
     else if(isspace(c))
         return 5;
     else
@@ -276,6 +280,9 @@ void printTokenInfo(char lexema[], int lineaPos, bool outputEnabled, FILE *fp, i
             break;
         case OPERADOR:
             strcpy(token, "Operador");
+            break;
+        case STRING:
+            strcpy(token, "String");
             break;
         case IDORES:
             if(verificarCadenaTipo(lexema) == RESERVADO){
